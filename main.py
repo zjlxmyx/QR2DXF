@@ -1,21 +1,72 @@
 import os
+import re
 from time import strftime, localtime
 import qrcode
 import numpy as np
 from dxfwrite import DXFEngine as dxf
-
-from tkinter import Label, Entry, Button, Tk, END, INSERT
+from tkinter import Label, Entry, Button, Tk, END, INSERT, Canvas
 from tkinter import messagebox
 from tkinter import filedialog
 
 
+def readTXT(path):
+    # 读取txt，一共三行
+    # --------------------------
+    # size = 60
+    # x60
+    # cutline_x = [10, 20, 30, 40, 50]
+    # cutline_y = [12, 24, 36, 48]
+    # --------------------------
+    txt = open(path, encoding="utf-8")
+    lines = txt.readlines()
+
+    # 用正则表达式提取关键信息
+    pattern1 = re.compile(r'\d+x\d+')
+    result1 = pattern1.findall(lines[0])
+    size = re.split(r'x', result1[0])
+    size = list(map(float, size))
+
+    pattern2 = re.compile(r'\[(.+)\]')
+    drowLineX = pattern2.findall(lines[1])
+    drowLineX = re.split(r'[,;\s*]\s*', drowLineX[0])
+    drowLineX = list(map(float, drowLineX))
+    drowLineY = pattern2.findall(lines[2])
+    drowLineY = re.split(r'[,;\s*]\s*', drowLineY[0])
+    drowLineY = list(map(float, drowLineY))
+
+    QRcodeX = [i - 1.5 for i in drowLineX]
+    QRcodeX.append(QRcodeX[-1] + 1.5 + 0.9)
+    QRcodeY = [i - 1.5 for i in drowLineY]
+    QRcodeY.append(QRcodeY[-1] + 1.5 + 0.9)
+    # 得坐标size, drowlineX, drowlineY, QRcodeX, QRcodeY后关闭txt
+    txt.close()
+
+    # 把坐标转化成canvas输入格式(x1,y1,x2,y2)
+    drowLineX.insert(0, 0)
+    drowLineX.append(size[0])
+    drowLineY.insert(0, 0)
+    drowLineY.append(size[1])
+    drowLines = []
+    for i in drowLineX:
+        drowLines.append([i, 0, i, size[1]])
+    for j in drowLineY:
+        drowLines.append([0, j, size[0], j])
+
+    # QRcode 就简化成一个0.6x0.6的小方块
+    drowQR = []
+    for k in QRcodeX:
+        for l in QRcodeY:
+            drowQR.append([k, l, k+0.6, l+0.6])
+
+    return size, drowLines, drowQR
+
+
+
 def QR_dxf(info, path, name):
+
     Offset_X = txt_offset_X.get().split(',')
 
     Offset_Y = txt_offset_Y.get().split(',')
-
-
-
 
     path = os.path.normpath(path)
     draw = dxf.drawing(path+'\\'+name+'.dxf')
@@ -115,7 +166,7 @@ def changePath(event):
 
 window = Tk()
 window.title("QR code --> dxf")
-window.geometry("550x210")
+window.geometry("550x600")
 
 label_Article = Label(window, width=12, text="Article Nr.")
 label_Article.grid(column=1, row=0)
@@ -154,23 +205,26 @@ label_offset_Y.grid(column=0, row=3)
 txt_offset_Y = Entry(window, width=28)
 txt_offset_Y.grid(column=1, row=3, columnspan=5, sticky='W')
 
+#canvas = Canvas(window, bg='white', height=350, width=350)
+#canvas.grid(column=1, row=4, columnspan=2, pady=10)
+
 
 label_name = Label(window, text="save name", width=12)
-label_name.grid(column=0, row=4)
+label_name.grid(column=0, row=5)
 txt_name = Entry(window, width=12)
-txt_name.grid(column=1, row=4, columnspan=5, pady=10, sticky='W')
+txt_name.grid(column=1, row=5, columnspan=5, pady=10, sticky='W')
 txt_name.insert(INSERT, 'QR'+strftime('%H%M%S', localtime()))
 
 label_path = Label(window, text="save path")
-label_path.grid(column=0, row=5)
+label_path.grid(column=0, row=6)
 txt_path = Entry(window, width=72)
-txt_path.grid(column=1, row=5, columnspan=5, sticky='W')
+txt_path.grid(column=1, row=6, columnspan=5, sticky='W')
 txt_path.bind(' <Double-Button-1> ', changePath)
 txt_path.insert(INSERT, os.getcwd())
 
 
 
 btn_gene = Button(window, width=20, text="generate", command=qr2dxf)
-btn_gene.grid(column=2, row=6, columnspan=2, pady=10)
+btn_gene.grid(column=2, row=7, columnspan=2, pady=10)
 
 window.mainloop()

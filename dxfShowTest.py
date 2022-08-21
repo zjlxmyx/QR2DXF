@@ -1,5 +1,5 @@
+import tkinter as tk
 import re
-
 
 def readTXT(path):
     # 读取txt，一共三行
@@ -56,6 +56,30 @@ def readTXT(path):
     return drowLines, drowQR
 
 
+def scaling(inputList):
+    outputList = [i*3+7 for i in inputList]
+    outputList[1] = 210-outputList[1]
+    outputList[3] = 210 - outputList[3]
+    return outputList
+
+
+
 path = r'ttt.txt'
-a, b, c, d, e = readTXT(path)
-print(a, b, c, d, e)
+
+
+
+window = tk.Tk()
+window.title('')
+window.geometry('300x300')
+
+canvas = tk.Canvas(window, bg='white', height=210, width=210)
+canvas.pack()
+
+drowLines, drowQR = readTXT(path)
+for i in drowLines:
+    canvas.create_line(scaling(i), fill='lime')
+for j in drowQR:
+    canvas.create_rectangle(scaling(j), fill='limeGreen', outline='limeGreen')
+
+
+window.mainloop()
