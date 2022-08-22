@@ -57,9 +57,9 @@ def readTXT(path):
 
 
 def scaling(inputList):
-    outputList = [i*3+7 for i in inputList]
-    outputList[1] = 210-outputList[1]
-    outputList[3] = 210 - outputList[3]
+    outputList = [i*4+7 for i in inputList]
+    outputList[1] = 280-outputList[1]
+    outputList[3] = 280 - outputList[3]
     return outputList
 
 
@@ -72,7 +72,7 @@ window = tk.Tk()
 window.title('')
 window.geometry('300x300')
 
-canvas = tk.Canvas(window, bg='white', height=210, width=210)
+canvas = tk.Canvas(window, bg='white', height=280, width=280)
 canvas.pack()
 
 drowLines, drowQR = readTXT(path)

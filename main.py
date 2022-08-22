@@ -8,8 +8,10 @@ from tkinter import Label, Entry, Button, Tk, END, INSERT, Canvas
 from tkinter import messagebox
 from tkinter import filedialog
 
-
+global g_size, g_QRcodeX, g_QRcodeY
 def readTXT(path):
+    global g_size, g_QRcodeX, g_QRcodeY
+
     # 读取txt，一共三行
     # --------------------------
     # size = 60
@@ -25,6 +27,7 @@ def readTXT(path):
     result1 = pattern1.findall(lines[0])
     size = re.split(r'x', result1[0])
     size = list(map(float, size))
+    g_size = size
 
     pattern2 = re.compile(r'\[(.+)\]')
     drowLineX = pattern2.findall(lines[1])
@@ -36,8 +39,10 @@ def readTXT(path):
 
     QRcodeX = [i - 1.5 for i in drowLineX]
     QRcodeX.append(QRcodeX[-1] + 1.5 + 0.9)
+    g_QRcodeX = QRcodeX
     QRcodeY = [i - 1.5 for i in drowLineY]
     QRcodeY.append(QRcodeY[-1] + 1.5 + 0.9)
+    g_QRcodeY = QRcodeY
     # 得坐标size, drowlineX, drowlineY, QRcodeX, QRcodeY后关闭txt
     txt.close()
 
@@ -58,29 +63,61 @@ def readTXT(path):
         for l in QRcodeY:
             drowQR.append([k, l, k+0.6, l+0.6])
 
-    return size, drowLines, drowQR
+    return size, drowLines, drowQR, drowLineX, drowLineY
 
+
+def scaling(inputList):
+    outputList = [i*4+7 for i in inputList]
+    outputList[1] = 280-outputList[1]
+    outputList[3] = 280 - outputList[3]
+    return outputList
+
+
+def showDXF():
+
+    canvas.delete("all")
+    path = filedialog.askopenfilename()
+    size, drowLines, drowQR, drowLineX, drowLineY= readTXT(path)
+
+    txt_size.config(state='normal')
+    txt_size.delete(0, 'end')
+    txt_size.insert(INSERT, str(size[0])+' x '+str(size[1]))
+    txt_size.config(state='readonly')
+
+    txt_cutline_X.config(state='normal')
+    drowLineX.pop(0)
+    drowLineX.pop(-1)
+    txt_cutline_X.delete(0, 'end')
+    txt_cutline_X.insert(INSERT, str(drowLineX))
+    txt_cutline_X.config(state='readonly')
+
+    txt_cutline_Y.config(state='normal')
+    drowLineY.pop(0)
+    drowLineY.pop(-1)
+    txt_cutline_Y.delete(0, 'end')
+    txt_cutline_Y.insert(INSERT, str(drowLineY))
+    txt_cutline_Y.config(state='readonly')
+
+
+    for i in drowLines:
+        canvas.create_line(scaling(i), fill='lime')
+    for j in drowQR:
+        canvas.create_rectangle(scaling(j), fill='limeGreen', outline='limeGreen')
 
 
 def QR_dxf(info, path, name):
-
-    Offset_X = txt_offset_X.get().split(',')
-
-    Offset_Y = txt_offset_Y.get().split(',')
+    global g_size, g_QRcodeX, g_QRcodeY
 
     path = os.path.normpath(path)
     draw = dxf.drawing(path+'\\'+name+'.dxf')
-    draw.add(dxf.line((0, 0), (66, 0)))
-    draw.add(dxf.line((66, 0), (66, 66)))
-    draw.add(dxf.line((66, 66), (0, 66)))
-    draw.add(dxf.line((0, 66), (0, 0)))
+    draw.add(dxf.rectangle((0, 0), g_size[0], g_size[1]))
 
 #初始化结束，总循环开始（循环生成二维码）
 
-    for index_x, offset_x in enumerate(Offset_X):
-        offset_x = float(offset_x)
-        for index_y, offset_y in enumerate(Offset_Y):
-            offset_y = float(offset_y)
+    for index_x, QR_x in enumerate(g_QRcodeX):
+        #cutline_X = float(cutline_X)
+        for index_y, QR_y in enumerate(g_QRcodeY):
+            #cutline_Y = float(cutline_Y)
 
             information = info + '0' + str(index_x) + str(index_y)
 
@@ -132,14 +169,10 @@ def QR_dxf(info, path, name):
                     if len(end_pos) != 0:
                         # print(start_pos, end_pos)
                         draw.add(
-                            dxf.line((start_pos[0] * 0.0058 + offset_x, start_pos[1] * 0.0058 + offset_y), (end_pos[0] * 0.0058 + offset_x, end_pos[1] * 0.0058 + offset_y)))
+                            dxf.line((start_pos[0] * 0.0058 + QR_x, start_pos[1] * 0.0058 + QR_y), (end_pos[0] * 0.0058 + QR_x, end_pos[1] * 0.0058 + QR_y)))
                         start_pos = []
                         end_pos = []
     draw.save()
-
-
-
-
 
 
 def qr2dxf():
@@ -162,11 +195,27 @@ def changePath(event):
     txt_path.insert(INSERT, dir)
 
 
+def func_focus(event, entryID):
+    if entryID == 1:
+        if len(txt_Article.get()) == 6:
+            txt_Wavelength.focus_set()
+    elif entryID == 2:
+        if len(txt_Wavelength.get()) == 4:
+            txt_Type.focus_set()
+    elif entryID == 3:
+        if len(txt_Type.get()) == 4:
+            txt_Number.focus_set()
+    elif entryID == 4:
+        if len(txt_Number.get()) == 4:
+            txt_Supplier.focus_set()
+
+
+
 
 
 window = Tk()
 window.title("QR code --> dxf")
-window.geometry("550x600")
+window.geometry("600x350")
 
 label_Article = Label(window, width=12, text="Article Nr.")
 label_Article.grid(column=1, row=0)
@@ -183,48 +232,65 @@ label_code = Label(window, text="code", width=12)
 label_code.grid(column=0, row=1)
 txt_Article = Entry(window, width=12)
 txt_Article.grid(column=1, row=1, padx=0, sticky='W')
+txt_Article.bind('<KeyRelease>', lambda event, entryID=1: func_focus(event, entryID))
 txt_Wavelength = Entry(window, width=12)
 txt_Wavelength.grid(column=2, row=1)
+txt_Wavelength.bind('<KeyRelease>', lambda event, entryID=2: func_focus(event, entryID))
 txt_Type = Entry(window, width=12)
-txt_Type.grid(column=3, row=1)
+txt_Type.grid(column=3, row=1, padx=8, sticky='W')
+txt_Type.bind('<KeyRelease>', lambda event, entryID=3: func_focus(event, entryID))
 txt_Number = Entry(window, width=12)
-txt_Number.grid(column=4, row=1)
+txt_Number.grid(column=4, row=1, padx=1, sticky='W')
+txt_Number.bind('<KeyRelease>', lambda event, entryID=4: func_focus(event, entryID))
 txt_Supplier = Entry(window, width=12)
-txt_Supplier.grid(column=5, row=1)
+txt_Supplier.grid(column=5, row=1, padx=8, sticky='W')
 
-label_offset_X = Label(window, text="offset_X", width=12)
-label_offset_X.grid(column=0, row=2)
-txt_offset_X = Entry(window, width=28)
-txt_offset_X.grid(column=1, row=2, columnspan=5, pady=10, sticky='W')
-label_eg = Label(window, text="for example:   0,1,2,3")
-label_eg.grid(column=3, row=2, columnspan=2, sticky='W')
+label_size = Label(window, text="size", width=12)
+label_size.grid(column=0, row=2, pady=10, sticky='WS')
+txt_size = Entry(window, width=10)
+txt_size.config(state='readonly')
+txt_size.grid(column=1, row=2, columnspan=2, sticky='W')
+
+label_cutline_X = Label(window, text="cutline_X", width=12)
+label_cutline_X.grid(column=0, row=3)
+txt_cutline_X = Entry(window, width=28)
+txt_cutline_X.config(state='readonly')
+txt_cutline_X.grid(column=1, row=3, columnspan=2, sticky='W')
+
+#label_eg = Label(window, borderwidth=0, relief="ridge", bg='lightgray', text="for example:   0,1,2,3")
+#label_eg.grid(column=3, row=2, columnspan=2, sticky='W')
+
+label_cutline_Y = Label(window, text="cutline_Y", width=12)
+label_cutline_Y.grid(column=0, row=4)
+txt_cutline_Y = Entry(window, width=28)
+txt_cutline_Y.config(state='readonly')
+txt_cutline_Y.grid(column=1, row=4, columnspan=2, pady=10, sticky='W')
+
+canvas = Canvas(window, bg='white', height=280, width=280)
+#canvas.grid(column=3, row=2, columnspan=5, rowspan=5, pady=0)
+canvas.place(x=298, y=52)
 
 
-label_offset_Y = Label(window, text="offset_Y", width=12)
-label_offset_Y.grid(column=0, row=3)
-txt_offset_Y = Entry(window, width=28)
-txt_offset_Y.grid(column=1, row=3, columnspan=5, sticky='W')
-
-#canvas = Canvas(window, bg='white', height=350, width=350)
-#canvas.grid(column=1, row=4, columnspan=2, pady=10)
+btn_load = Button(window, width=10, text="load", command=showDXF)
+btn_load.grid(column=1, row=5, columnspan=2, pady=10)
 
 
 label_name = Label(window, text="save name", width=12)
-label_name.grid(column=0, row=5)
+label_name.grid(column=0, row=6)
 txt_name = Entry(window, width=12)
-txt_name.grid(column=1, row=5, columnspan=5, pady=10, sticky='W')
+txt_name.grid(column=1, row=6, columnspan=5, pady=15, sticky='W')
 txt_name.insert(INSERT, 'QR'+strftime('%H%M%S', localtime()))
 
 label_path = Label(window, text="save path")
-label_path.grid(column=0, row=6)
-txt_path = Entry(window, width=72)
-txt_path.grid(column=1, row=6, columnspan=5, sticky='W')
+label_path.grid(column=0, row=7)
+txt_path = Entry(window, width=28)
+txt_path.grid(column=1, row=7, columnspan=2, sticky='W')
 txt_path.bind(' <Double-Button-1> ', changePath)
 txt_path.insert(INSERT, os.getcwd())
 
 
 
 btn_gene = Button(window, width=20, text="generate", command=qr2dxf)
-btn_gene.grid(column=2, row=7, columnspan=2, pady=10)
+btn_gene.grid(column=0, row=8, columnspan=3, pady=15)
 
 window.mainloop()
