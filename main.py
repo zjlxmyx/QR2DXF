@@ -67,9 +67,9 @@ def readTXT(path):
 
 
 def scaling(inputList):
-    outputList = [i*4+7 for i in inputList]
-    outputList[1] = 280-outputList[1]
-    outputList[3] = 280 - outputList[3]
+    outputList = [i*5+10 for i in inputList]
+    outputList[1] = 350-outputList[1]
+    outputList[3] = 350-outputList[3]
     return outputList
 
 
@@ -119,7 +119,7 @@ def QR_dxf(info, path, name):
         for index_y, QR_y in enumerate(g_QRcodeY):
             #cutline_Y = float(cutline_Y)
 
-            information = info + '0' + str(index_x) + str(index_y)
+            information = info + '%02d' % index_x + '%02d' % index_y
 
 
             qr = qrcode.QRCode(
@@ -215,7 +215,7 @@ def func_focus(event, entryID):
 
 window = Tk()
 window.title("QR code --> dxf")
-window.geometry("600x350")
+window.geometry("680x420")
 
 label_Article = Label(window, width=12, text="Article Nr.")
 label_Article.grid(column=1, row=0)
@@ -227,23 +227,29 @@ label_Number = Label(window, width=12, text="Number")
 label_Number.grid(column=4, row=0)
 label_Supplier = Label(window, width=12, text="Supplier")
 label_Supplier.grid(column=5, row=0)
+label_position = Label(window, width=12, text="position")
+label_position.grid(column=6, row=0)
 
 label_code = Label(window, text="code", width=12)
 label_code.grid(column=0, row=1)
-txt_Article = Entry(window, width=12)
+txt_Article = Entry(window, width=12, justify='center')
 txt_Article.grid(column=1, row=1, padx=0, sticky='W')
 txt_Article.bind('<KeyRelease>', lambda event, entryID=1: func_focus(event, entryID))
-txt_Wavelength = Entry(window, width=12)
+txt_Wavelength = Entry(window, width=12, justify='center')
 txt_Wavelength.grid(column=2, row=1)
 txt_Wavelength.bind('<KeyRelease>', lambda event, entryID=2: func_focus(event, entryID))
-txt_Type = Entry(window, width=12)
+txt_Type = Entry(window, width=12, justify='center')
 txt_Type.grid(column=3, row=1, padx=8, sticky='W')
 txt_Type.bind('<KeyRelease>', lambda event, entryID=3: func_focus(event, entryID))
-txt_Number = Entry(window, width=12)
+txt_Number = Entry(window, width=12, justify='center')
 txt_Number.grid(column=4, row=1, padx=1, sticky='W')
 txt_Number.bind('<KeyRelease>', lambda event, entryID=4: func_focus(event, entryID))
-txt_Supplier = Entry(window, width=12)
+txt_Supplier = Entry(window, width=12, justify='center')
 txt_Supplier.grid(column=5, row=1, padx=8, sticky='W')
+txt_position = Entry(window, width=10, justify='center')
+txt_position.insert(INSERT, 'xxyy')
+txt_position.config(state='readonly')
+txt_position.grid(column=6, row=1, padx=8, sticky='W')
 
 label_size = Label(window, text="size", width=12)
 label_size.grid(column=0, row=2, pady=10, sticky='WS')
@@ -266,7 +272,7 @@ txt_cutline_Y = Entry(window, width=28)
 txt_cutline_Y.config(state='readonly')
 txt_cutline_Y.grid(column=1, row=4, columnspan=2, pady=10, sticky='W')
 
-canvas = Canvas(window, bg='white', height=280, width=280)
+canvas = Canvas(window, bg='white', height=350, width=350)
 #canvas.grid(column=3, row=2, columnspan=5, rowspan=5, pady=0)
 canvas.place(x=298, y=52)
 
